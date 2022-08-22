@@ -1,31 +1,47 @@
-from django.forms import ValidationError, model_to_dict
+from django.shortcuts import get_object_or_404
 from rest_framework.views import APIView, Request, Response, status
 
 from .models import Animal
+from .serializers import AnimalSerializer, AnimalDetailSerializer
 
 class AnimalView(APIView):
     def get(self, request: Request):
         animals = Animal.objects.all()
+        serializer = AnimalSerializer(animals, many=True)
 
-        animals_list = [model_to_dict(animal) for animal in animals]
+        return Response(serializer.data)
 
-        return Response(animals_list)
+    def post(self, request: Request) -> Response:
+        serializer = AnimalDetailSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
 
-    def post(self, request: Request):
-        animal = Animal(**request.data)
+        serializer.save()
         
-        try:
-            animal.full_clean()
-        except ValidationError as err:
-            import ipdb
-            
-            ipdb.set_trace()
-
-            return Response("")
         
-        animal.save()
+        return Response(serializer.data, status.HTTP_201_CREATED)
 
 
-        animal_dict = model_to_dict(animal)
+class AnimalDetailView(APIView):
+    def get(self, request: Request, animal_id: int) -> Response:
+        animal = get_object_or_404(Animal, id=animal_id)
 
-        return Response(animal_dict, status.HTTP_201_CREATED)
+        serializer = AnimalDetailSerializer(animal)
+
+        return Response(serializer.data)
+
+    def patch(self, request: Request, animal_id: int) -> Response:
+        animal = get_object_or_404(Animal, id=animal_id)
+
+        serializer = AnimalDetailSerializer(animal, data=request.data, partial=True)
+        serializer.is_valid(raise_exception=True)
+
+        serializer.save()
+
+        return Response(serializer.data)
+
+    def delete(self, request: Request, animal_id: int) -> Response:
+        animal = get_object_or_404(Animal, id=animal_id)
+
+        animal.delete()
+
+        return Response(status=status.HTTP_204_NO_CONTENT)
