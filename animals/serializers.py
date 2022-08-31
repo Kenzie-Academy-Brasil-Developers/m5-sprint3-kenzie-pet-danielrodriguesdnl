@@ -37,7 +37,7 @@ class AnimalDetailSerializer(serializers.Serializer):
     groups = GroupSerializer()
 
     def create(self, validated_data: dict) -> Animal:
-        group_data = validated_data.pop("group")
+        group_data = validated_data.pop("groups")
 
         animal_obj = Animal.objects.create(**validated_data)
         Group.objects.create(**group_data, animal=animal_obj)
