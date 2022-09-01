@@ -2,6 +2,7 @@ from groups.models import Group
 from groups.serializers import GroupSerializer
 from traits.serializers import TraitSerializer
 from rest_framework import serializers
+from rest_framework.exceptions import ValidationError
 
 
 from .models import SexAnimal, Animal
@@ -15,7 +16,7 @@ class AnimalSerializer(serializers.Serializer):
     created_at = serializers.DateTimeField(read_only=True)
     updated_at = serializers.DateTimeField(read_only=True)
 
-    traits = TraitSerializer(read_only=True, many=True)
+    traits = TraitSerializer(many=True)
 
 
 class AnimalDetailSerializer(serializers.Serializer):
@@ -33,7 +34,7 @@ class AnimalDetailSerializer(serializers.Serializer):
         return str(obj.updated_at - obj.created_at)
 
 
-    traits = TraitSerializer(read_only=True, many=True) 
+    traits = TraitSerializer(many=True) 
     groups = GroupSerializer()
 
     def create(self, validated_data: dict) -> Animal:
@@ -46,6 +47,8 @@ class AnimalDetailSerializer(serializers.Serializer):
 
     def update(self, instance: Animal, validated_data: dict) -> Animal:
         for key, value in validated_data.items():
+            if key == "sex" or "traits" or "groups":
+                raise ValidationError({"Detail: Não é possivel atualizar os campos: Sex, Traits ou Groups"})
             setattr(instance, key, value)
 
         instance.save()
